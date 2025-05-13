@@ -1,37 +1,71 @@
 import 'dart:io';
-
-import 'package:file_picker/file_picker.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:get/get.dart';
-import 'package:get/get_state_manager/src/simple/get_controllers.dart';
-import 'package:image_picker/image_picker.dart';
-import 'package:just_audio/just_audio.dart';
-import 'package:musictiktok/services/storage_service.dart';
 
-import '../models/model.dart';
+import '../config/app_routes.dart';
+import '../repo/repo.dart';
+import '../services/ffmpeg_service.dart';
+import '../services/file_service.dart';
+import '../services/permission_service.dart';
 
-class PostController extends GetxController {
-  final StorageService _storageService = Get.find<StorageService>();
-  final RxList<Post> posts = <Post>[].obs;
+class PostCreationController extends GetxController {
+  final PostRepository _postRepository;
+  final FileService _fileService;
+  final PermissionService _permissionService;
+
+  PostCreationController()
+      : _postRepository = PostRepository(FFmpegService(), FileService()),
+        _fileService = FileService(),
+        _permissionService = PermissionService();
+
+  final imageFile = Rx<File?>(null);
+  final audioFile = Rx<File?>(null);
+  final isProcessing = false.obs;
+  final processingStatus = ''.obs;
 
   @override
   void onInit() {
     super.onInit();
-    loadPosts();
+    _requestPermissions();
   }
 
-  void loadPosts() {
-    final loadedPosts = _storageService.getPosts();
-    loadedPosts.sort((a, b) => b.createdAt.compareTo(a.createdAt));
-    posts.value = loadedPosts;
+  Future<void> _requestPermissions() async {
+    await _permissionService.requestPermissions();
   }
 
-  Future<void> savePost(Post post) async {
-    posts.add(post);
-    posts.sort((a, b) => b.createdAt.compareTo(a.createdAt));
-    await _storageService.savePosts(posts);
+  Future<void> pickImage({bool fromCamera = false}) async {
+    final file = await _fileService.pickImage(fromCamera: fromCamera);
+    if (file != null) {
+      imageFile.value = file;
+    }
+  }
+
+  Future<void> pickAudio() async {
+    final file = await _fileService.pickAudio();
+    if (file != null) {
+      audioFile.value = file;
+    }
+  }
+
+  Future<void> createVideo() async {
+    if (imageFile.value == null || audioFile.value == null) {
+      Get.snackbar('Error', 'Please select both image and audio');
+      return;
+    }
+
+    isProcessing.value = true;
+    processingStatus.value = 'Processing...';
+
+    try {
+      processingStatus.value = 'Encoding...';
+      final post = await _postRepository.createPost(
+        imageFile.value!.path,
+        audioFile.value!.path,
+      );
+      isProcessing.value = false;
+      Get.offNamed(AppRoutes.postDisplay, arguments: post.videoFile);
+    } catch (e) {
+      isProcessing.value = false;
+      Get.snackbar('Error', 'Failed to create video: $e');
+    }
   }
 }
-
-// Audio controller using GetX and just_audio
-

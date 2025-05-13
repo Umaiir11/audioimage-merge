@@ -1,48 +1,44 @@
-import 'dart:io';
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:image_picker/image_picker.dart';
-import 'package:file_picker/file_picker.dart';
-import 'package:just_audio/just_audio.dart';
-import 'package:musictiktok/services/storage_service.dart';
-import 'package:musictiktok/views/home_view.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:path/path.dart' as path;
+import 'config/app_routes.dart';
 
-import 'controllers/controller.dart';
-import 'models/model.dart';
-
-void main() async {
+void main() {
   WidgetsFlutterBinding.ensureInitialized();
-
-  // Initialize GetX controllers
-  await Get.putAsync(() => StorageService().init());
-  Get.put(PostController());
-
   runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({Key? key}) : super(key: key);
+  const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return GetMaterialApp(
-      title: 'Flutter Tunes',
+      title: 'Post Creator',
       theme: ThemeData(
-        primarySwatch: Colors.blue,
-        scaffoldBackgroundColor: Colors.black,
         brightness: Brightness.dark,
-        appBarTheme: const AppBarTheme(
-          backgroundColor: Colors.black,
-          elevation: 0,
+        primaryColor: Colors.purpleAccent,
+        scaffoldBackgroundColor: Colors.black,
+        elevatedButtonTheme: ElevatedButtonThemeData(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.purpleAccent,
+            foregroundColor: Colors.white,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            padding: const EdgeInsets.symmetric(vertical: 16),
+          ),
+        ),
+        textTheme: const TextTheme(
+          bodyMedium: TextStyle(color: Colors.white, fontSize: 16),
+          headlineSmall: TextStyle(
+            color: Colors.white,
+            fontSize: 24,
+            fontWeight: FontWeight.bold,
+          ),
         ),
       ),
-      home: const HomePage(),
+      initialRoute: AppRoutes.postCreation,
+      getPages: AppRoutes.routes,
     );
   }
 }
-
-
